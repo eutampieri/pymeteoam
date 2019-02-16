@@ -60,7 +60,7 @@ class MeteoAM:
     place_id = None
     def __init__(self, place):
         if type(place) is str:
-            response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + name, headers={'User-Agent': 'pymeteoam'})
+            response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
             localita = json.loads(response.text, object_pairs_hook=collections.OrderedDict)
             nome = localita.keys()[0]
             response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+nome+"&form_id=ricerca_localita_form", headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
