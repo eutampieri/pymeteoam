@@ -88,7 +88,7 @@ class MeteoAM:
         response = requests.request("GET", "http://www.meteoam.it/ta/previsione/" + str(self.place_id), headers={'User-Agent': 'pymeteoam'})
         soup = BeautifulSoup(response.text, 'html.parser')
         temp = soup.find_all("tr")
-        max = 0
+        max_pct = 0
         for t in temp:
             td = t.find_all("td")
             if(len(td)):
@@ -96,6 +96,6 @@ class MeteoAM:
                 rain = re.search("[0-9]*%", str(td[1]))
                 if(rain):
                    r = int(rain.string[4:-6])
-                   if(max < r):
-                       max = r
-        return(max)
+                   if(max_pct < r):
+                       max_pct = r
+        return(max_pct)
