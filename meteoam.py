@@ -61,10 +61,15 @@ class MeteoAM:
     place_id = None
     def __init__(self, place):
         if type(place) is str:
+            # Ottengo un ID che mi permette di cercare il nome della localita
+            response = requests.request("GET", "http://www.meteoam.it/ajaxblocks", params={"blocks":"ricerca_localita-ricerca_previsioni_localita_hp","nocache":"1","path":"ta/previsione/0/"}, headers={'User-Agent': 'pymeteoam'})
+            soup = BeautifulSoup(json.loads(response.text)["ricerca_localita-ricerca_previsioni_localita_hp"]["content"], 'html.parser')
+            token = soup.find_all(attrs={"name": "form_build_id"})[0]["value"]
+            # Effettuo la ricerca
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
             localita = json.loads(response.text, object_pairs_hook=collections.OrderedDict)
             nome = list(localita.values())[0]
-            response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+nome+"&form_id=ricerca_localita_form", headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
+            response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+list(localita.keys())[0]+"&form_id=ricerca_localita_form&form_build_id="+token, headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
             self.place_id = response.headers["Location"].split('/')[-2]
         else:
             self.place_id = place
