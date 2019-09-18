@@ -62,7 +62,7 @@ class MeteoAM:
         if type(place) is str:
             response = requests.request("GET", "http://www.meteoam.it/ricerca_localita/autocomplete/" + place, headers={'User-Agent': 'pymeteoam'})
             localita = json.loads(response.text, object_pairs_hook=collections.OrderedDict)
-            nome = localita.keys()[0]
+            nome = list(localita.values())[0]
             response = requests.request("POST", "http://www.meteoam.it/ta/previsione/", data="ricerca_localita="+nome+"&form_id=ricerca_localita_form", headers={'content-type': 'application/x-www-form-urlencoded', 'User-Agent': 'pymeteoam'}, allow_redirects=False)
             self.place_id = response.headers["Location"].split('/')[-2]
         else:
@@ -71,7 +71,7 @@ class MeteoAM:
     def forecast_24h(self):
         response = requests.request("GET", "http://www.meteoam.it/sites/all/modules/custom/tempo_in_atto/highcharts/dati_temperature_giornaliero.php", data=0, params={"icao":str(self.place_id)}, headers={'User-Agent': 'pymeteoam'})
         press_cond = response.text
-        response = requests.request("GET", "http://www.meteoam.it/sites/all/modules/custom/tempo_in_atto/highcharts/dati_temperature.php", data=0, params={"id":str(place_id)}, headers={'User-Agent': 'pymeteoam'})
+        response = requests.request("GET", "http://www.meteoam.it/sites/all/modules/custom/tempo_in_atto/highcharts/dati_temperature.php", data=0, params={"id":str(self.place_id)}, headers={'User-Agent': 'pymeteoam'})
         temp = response.text
         dati_meteo_grezzi = ([f+g for f,g in zip(temp.replace("\r", '').split("\n"), ["\t"+"\t".join(h.split("\t")[1:]) for h in press_cond.replace("\r", '').split("\n")])])[:-1]
         return [(lambda x: {"date": datetime.strptime(x[0], "%m/%d/%Y %H:%M"), "temperature": float(x[1]), "pressure": float(x[2]), "weather": Weather(x[3]).to_text()})(dta.split("\t")) for dta in dati_meteo_grezzi]
