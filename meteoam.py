@@ -4,6 +4,7 @@ import collections
 from datetime import datetime
 import json
 import requests
+import re
 
 from bs4 import BeautifulSoup
 
@@ -82,3 +83,19 @@ class MeteoAM:
         soup = BeautifulSoup(response.text, 'html.parser')
         return {
             "place": soup.find("h3").find("a").text.capitalize(), "forecast": [(lambda x: {"day_of_week": dow[x[0].text], "extreme_weather": x[1].find("img")["alt"] if x[1].find("img") is not None else None, "weather": x[2].find("img")["alt"], "min_t": float(x[3].text.encode("utf-8").replace("°",'')), "max_t": float(x[4].text.encode("utf-8").replace("°",'')), "wind": x[5].find(attrs={"class":"badge"})["title"]})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
+
+    def prob_rain_today(self):
+        response = requests.request("GET", "http://www.meteoam.it/ta/previsione/" + str(self.place_id), headers={'User-Agent': 'pymeteoam'})
+        soup = BeautifulSoup(response.text, 'html.parser')
+        temp = soup.find_all("tr")
+        max_pct = 0
+        for t in temp:
+            td = t.find_all("td")
+            if(len(td)):
+                #print(str(td[1]))
+                rain = re.search("[0-9]*%", str(td[1]))
+                if(rain):
+                   r = int(rain.string[4:-6])
+                   if(max_pct < r):
+                       max_pct = r
+        return(max_pct)
