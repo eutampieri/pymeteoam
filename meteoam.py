@@ -92,16 +92,16 @@ class MeteoAM:
         last_hour = 0
         for t in temp:
             hour = re.search("[0-9][0-9]:[0-9][0-9]", str(t))
+            if(hour):
+               current_hour = int((hour.string[9:11]))
+               #controllo che questo dato di pioggia non sia del giorno successivo
+               if(last_hour > current_hour):
+                  return(max_pct)
+               last_hour = current_hour
             td = t.find_all("td")
             if(len(td)):
                 rain = re.search("[0-9]*%", str(td[1]))
                 if(rain):
-                   if(hour):
-                      current_hour = int((hour.string[9:11]))
-                      #controllo che questo dato di pioggia non sia del giorno successivo
-                      if(last_hour > current_hour):
-                         return(max_pct)
-                      last_hour = current_hour
                    r = int(rain.string[4:-6])
                    if(max_pct < r):
                        max_pct = r
