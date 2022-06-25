@@ -87,7 +87,7 @@ class MeteoAM:
         response = requests.request("GET", "http://www.meteoam.it/widget/localita/"+str(self.place_id), headers={'User-Agent': 'pymeteoam'})
         soup = BeautifulSoup(response.text, 'html.parser')
         return {
-            "place": soup.find("h3").find("a").text.capitalize(), "forecast": [(lambda x: {"day_of_week": dow[x[0].text], "extreme_weather": x[1].find("img")["alt"] if x[1].find("img") is not None else None, "weather": x[2].find("img")["alt"], "min_t": float(x[3].text.encode("utf-8").replace("°",'')), "max_t": float(x[4].text.encode("utf-8").replace("°",'')), "wind": x[5].find(attrs={"class":"badge"})["title"]})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
+            "place": soup.find("h3").find("a").text.capitalize(), "forecast": [(lambda x: {"day_of_week": dow[x[0].text], "weather": x[1].find("img")["alt"], "min_t": float(x[2].text.replace("°",'')), "max_t": float(x[3].text.replace("°",'')), "wind": {"knots": x[4].find(attrs={"class":"badge"}).text, "direction": x[4].find_all("span")[0]["class"][0].replace("vento" ,"")}})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
 
     def prob_rain_today(self):
         response = requests.request("GET", "http://www.meteoam.it/ta/previsione/" + str(self.place_id), headers={'User-Agent': 'pymeteoam'})
