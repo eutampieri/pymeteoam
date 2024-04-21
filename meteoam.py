@@ -4,223 +4,100 @@ import collections
 from datetime import datetime
 import json
 import requests
-import re
 
 from bs4 import BeautifulSoup
 
 
 class Weather:
-    _from_url = {
-        "coperto.png": 0,
-        "coperto_foschia.png": 1,
-        "coperto_nebbia.png": 2,
-        "coperto_neve.png": 3,
-        "coperto_pioggia.png": 4,
-        "coperto_temporale.png": 5,
-        "foschia.png": 6,
-        "fumo.png": 7,
-        "molto_nuvoloso.png": 8,
-        "molto_nuvoloso_foschia.png": 9,
-        "molto_nuvoloso_nebbia.png": 10,
-        "molto_nuvoloso_neve.png": 11,
-        "molto_nuvoloso_pioggia.png": 12,
-        "molto_nuvoloso_temporale.png": 13,
-        "nebbia.png": 14,
-        "neve.png": 15,
-        "nuvoloso.png": 16,
-        "nuvoloso_foschia.png": 17,
-        "nuvoloso_nebbia.png": 18,
-        "nuvoloso_neve.png": 19,
-        "nuvoloso_pioggia.png": 20,
-        "nuvoloso_temporale.png": 21,
-        "pioggia.png": 22,
-        "poco_nuvoloso.png": 23,
-        "poco_nuvoloso_foschia.png": 24,
-        "poco_nuvoloso_nebbia.png": 25,
-        "poco_nuvoloso_neve.png": 26,
-        "poco_nuvoloso_pioggia.png": 27,
-        "poco_nuvoloso_temporale.png": 28,
-        "sabbia.png": 29,
-        "sabbia_polvere.png": 30,
-        "sereno.png": 31,
-        "sereno_foschia.png": 32,
-        "sereno_nebbia.png": 33,
-        "sereno_neve.png": 34,
-        "sereno_pioggia.png": 35,
-        "sereno_temporale.png": 36,
-        "sollevamento_neve.png": 37,
-        "temporale.png": 38
+    _from_icon_id = {
+        "01": "Sereno giorno",
+        "02": "Parzialmente velato giorno",
+        "03": "Velato",
+        "04": "Poco nuvoloso giorno",
+        "05": "Molto nuvoloso giorno",
+        "06": "Coperto",
+        "07": "Coperto",
+        "08": "Pioggia debole",
+        "09": "Pioggia forte",
+        "10": "Temporale",
+        "11": "Pioggia mista a neve",
+        "12": "Pioggia che gela",
+        "13": "Foschia giorno",
+        "14": "Nebbia",
+        "15": "Grandine",
+        "16": "Neve",
+        "17": "Tromba d’aria o marina",
+        "18": "Fumo",
+        "19": "Tempesta di sabbia",
+        "31": "Sereno notte",
+        "32": "Parzialmente Velato notte",
+        "34": "Poco nuvoloso notte",
+        "35": "Molto nuvoloso notte",
+        "36": "Foschia notte",
     }
-    w_id = -1
+    w_id = None
 
-    def __init__(self, url):
-        self.w_id = self._from_url[url.split("/")[-1]]
+    def __init__(self, id):
+        self.w_id = id
 
     def to_text(self):
-        return ["Coperto",
-                "Coperto con foschia",
-                "Coperto con nebbia",
-                "Coperto con neve",
-                "Coperto con pioggia",
-                "Coperto con temporali",
-                "Foschia",
-                "Fumo",
-                "Molto nuvoloso",
-                "Molto nuvoloso con foschia",
-                "Molto nuvoloso con nebbia",
-                "Molto nuvoloso con neve",
-                "Molto nuvoloso con pioggia",
-                "Molto nuvoloso con temporali",
-                "Nebbia",
-                "Neve",
-                "Nuvoloso",
-                "Nuvoloso con foschia",
-                "Nuvoloso con nebbia",
-                "Nuvoloso con neve",
-                "Nuvoloso con pioggia",
-                "Nuvoloso con temporali",
-                "Pioggia",
-                "Poco nuvoloso",
-                "Poco nuvoloso con foschia",
-                "Poco nuvoloso con nebbia",
-                "Poco nuvoloso con neve",
-                "Poco nuvoloso con pioggia",
-                "Poco nuvoloso con temporali",
-                "Sabbia",
-                "Sabbia e polvere",
-                "Sereno",
-                "Sereno con foschia",
-                "Sereno con nebbia",
-                "Sereno con neve",
-                "Sereno con pioggia",
-                "Sereno con temporali",
-                "Sollevamento neve",
-                "Temporali"][self.w_id]
+        return self._from_icon_id[self.w_id]
 
 
 class MeteoAM:
-    place_id = None
+    lat = None
+    lon = None
 
-    def __init__(self, place):
-        if isinstance(place, str):
-            # Ottengo un ID che mi permette di cercare il nome della localita
-            response = requests.request(
-                "GET",
-                "http://www.meteoam.it/ajaxblocks",
-                params={
-                    "blocks": "ricerca_localita-ricerca_previsioni_localita_hp",
-                    "nocache": "1",
-                    "path": "ta/previsione/0/"},
-                headers={
-                    'User-Agent': 'pymeteoam'})
-            soup = BeautifulSoup(
-                json.loads(
-                    response.text)["ricerca_localita-ricerca_previsioni_localita_hp"]["content"],
-                'html.parser')
-            token = soup.find_all(attrs={"name": "form_build_id"})[0]["value"]
-            # Effettuo la ricerca
-            response = requests.request(
-                "GET",
-                "http://www.meteoam.it/ricerca_localita/autocomplete/" +
-                place,
-                headers={
-                    'User-Agent': 'pymeteoam'})
-            localita = json.loads(response.text,
-                                  object_pairs_hook=collections.OrderedDict)
-            nome = list(localita.values())[0]
-            response = requests.request(
-                "POST",
-                "http://www.meteoam.it/ta/previsione/",
-                data="ricerca_localita=" +
-                list(
-                    localita.keys())[0] +
-                "&form_id=ricerca_localita_form&form_build_id=" +
-                token,
-                headers={
-                    'content-type': 'application/x-www-form-urlencoded',
-                    'User-Agent': 'pymeteoam'},
-                allow_redirects=False)
-            self.place_id = response.headers["Location"].split('/')[-2]
-        else:
-            self.place_id = place
+    def __init__(self, lat, lon):
+        self.lat = lat
+        self.lon = lon
+
+    def _get_data(self):
+        return requests.get(f"https://api.meteoam.it/deda-meteograms/api/GetMeteogram/preset1/{self.lat},{self.lon}", headers={
+                'User-Agent': 'pymeteoam'}).json()
 
     def forecast_24h(self):
-        response = requests.request(
-            "GET",
-            "http://www.meteoam.it/sites/all/modules/custom/tempo_in_atto/highcharts/dati_temperature_giornaliero.php",
-            data=0,
-            params={
-                "icao": str(
-                    self.place_id)},
-            headers={
-                'User-Agent': 'pymeteoam'})
-        press_cond = response.text
-        response = requests.request(
-            "GET",
-            "http://www.meteoam.it/sites/all/modules/custom/tempo_in_atto/highcharts/dati_temperature.php",
-            data=0,
-            params={
-                "id": str(
-                    self.place_id)},
-            headers={
-                'User-Agent': 'pymeteoam'})
-        temp = response.text
-        dati_meteo_grezzi = (
-            [
-                f +
-                g for f,
-                g in zip(
-                    temp.replace(
-                        "\r",
-                        '').split("\n"),
-                    [
-                        "\t" +
-                        "\t".join(
-                            h.split("\t")[
-                                1:]) for h in press_cond.replace(
-                            "\r",
-                            '').split("\n")])])[
-            :-
-            1]
+        data = self._get_data()
+
+        hourly_data = []
+        for i, ts in enumerate(data["timeseries"]):
+            datapoint = {"timestamp": ts}
+            for j, p in enumerate(data["paramlist"]):
+                datapoint[p] = data["datasets"]["0"][str(j)][str(i)]
+            hourly_data.append(datapoint)
+
         return [
             (
                 lambda x: {
-                    "date": datetime.strptime(
-                        x[0],
-                        "%m/%d/%Y %H:%M"),
-                    "temperature": float(
-                        x[1]),
-                    "pressure": float(
-                        x[2]),
+                    "date": datetime.fromisoformat(
+                        x["timestamp"]),
+                    "rain": x["tpp"],
+                    "humidity": x["r"],
+                    "wind": {"direction": x["wdir"], "speed": x["wkmh"]},
+                    "temperature": x["2t"],
+                    "pressure": x["pmsl"],
                     "weather": Weather(
-                        x[3]).to_text()})(
-                dta.split("\t")) for dta in dati_meteo_grezzi]
+                        x["icon"]).to_text()})(
+                dta) for dta in hourly_data]
 
     def forecast_daily(self):
-        dow = {
-            "Lun": 1,
-            "Mar": 2,
-            "Mer": 3,
-            "Gio": 4,
-            "Ven": 5,
-            "Sab": 6,
-            "Dom": 0}
-        response = requests.request("GET",
-                                    "http://www.meteoam.it/widget/localita/" + str(self.place_id),
-                                    headers={'User-Agent': 'pymeteoam'})
-        soup = BeautifulSoup(response.text, 'html.parser')
-        return {"place": soup.find("h3").find("a").text.capitalize(),
-                "forecast": [(lambda x: {"day_of_week": dow[x[0].text],
-                                         "weather": x[1].find("img")["alt"],
-                                         "min_t": float(x[2].text.replace("°",
-                                                                          '')),
-                                         "max_t": float(x[3].text.replace("°",
-                                                                          '')),
-                                         "wind": {"knots": x[4].find(attrs={"class": "badge"}).text,
-                              "direction": x[4].find_all("span")[0]["class"][0].replace("vento",
-                                                                                        "")}})(r.find_all("td")) for r in soup.find_all("tr")[1:]]}
+        data = self._get_data()
+        day_by_day = []
+        for x in data["extrainfo"]["stats"]:
+            if x["icon"] == '-':
+                continue
+            day_by_day.append(x)
+
+        return {"place": (self.lat, self.lon),
+                "forecast": [(lambda x: {"date": datetime.fromisoformat(x["localDate"]),
+                                         "day_of_week": datetime.fromisoformat(x["localDate"]).weekday(),
+                                         "weather": Weather(x["icon"]).to_text(),
+                                         "min_t": x["minCelsius"],
+                                         "max_t": x["maxCelsius"],
+                                        })(r) for r in day_by_day]}
 
     def prob_rain_today(self):
+        raise NotImplementedError("This function is not yet compatible with the new MeteoAM. You'll find the hourly probabilities in the hourly forecast")
         response = requests.request("GET",
                                     "http://www.meteoam.it/ta/previsione/" + str(self.place_id),
                                     headers={'User-Agent': 'pymeteoam'})
